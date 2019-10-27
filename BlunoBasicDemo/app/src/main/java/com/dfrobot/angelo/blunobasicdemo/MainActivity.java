@@ -74,22 +74,26 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
         int rightSpeed = right[0];
         byte[] command = SpheroMotors.drive(leftMode, leftSpeed, rightMode, rightSpeed);
         if(updateUI){
-            StringBuilder builder = new StringBuilder();
-            builder.append(getReadableDirection(leftMode)).append(",").append(leftSpeed).append("\n");
-            builder.append(getReadableDirection(rightMode)).append(",").append(rightSpeed).append("\n");
-
-            builder.append("[");
-            for (int i = 0; i < command.length; i++) {
-                builder.append(command[i]);
-                if(i+1 < command.length)
-                    builder.append(",");
-            }
-            builder.append("]");
-
-            TextView textView = findViewById(R.id.textViewDebug);
-            textView.setText(builder);
+            updateUI(leftMode, leftSpeed, rightMode, rightSpeed, command);
         }
         return command;
+    }
+
+    private void updateUI(int leftMode, int leftSpeed, int rightMode, int rightSpeed, byte[] command) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(getReadableDirection(leftMode)).append(",").append(leftSpeed).append("\n");
+        builder.append(getReadableDirection(rightMode)).append(",").append(rightSpeed).append("\n");
+
+        builder.append("[");
+        for (int i = 0; i < command.length; i++) {
+            builder.append(command[i]);
+            if(i+1 < command.length)
+                builder.append(",");
+        }
+        builder.append("]");
+
+        TextView textView = findViewById(R.id.textViewDebug);
+        textView.setText(builder);
     }
 
     private String getReadableDirection(int mode) {
@@ -214,7 +218,11 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
                 rightMode = 0x1;
                 break;
         }
-        serialSend(SpheroMotors.drive(leftMode, leftSpeed, rightMode, rightSpeed));
+        byte[] commandByteArray = SpheroMotors.drive(leftMode, leftSpeed, rightMode, rightSpeed);
+
+        updateUI(leftMode, leftSpeed, rightMode, rightSpeed, commandByteArray);
+
+        serialSend(commandByteArray);
     }
 
 	@Override
