@@ -28,9 +28,6 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
 		setContentView(R.layout.activity_main);
         onCreateProcess();														//onCreate Process by BlunoLibrary
 
-
-        serialBegin(115200);													//set the Uart Baudrate on BLE chip to 115200
-
         serialReceivedText=(TextView) findViewById(R.id.serialReveicedText);	//initial the EditText of the received data
         serialSendText=(EditText) findViewById(R.id.serialSendText);			//initial the EditText of the sending data
 
@@ -72,7 +69,7 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
 	    int leftMode = left[1];
 	    int leftSpeed = left[0];
 
-        int[] right = parseMotor(sliderTop.getProgress());
+        int[] right = parseMotor(sliderBottom.getProgress());
         int rightMode = right[1];
         int rightSpeed = right[0];
         return SpheroMotors.drive(leftMode, leftSpeed, rightMode, rightSpeed);
