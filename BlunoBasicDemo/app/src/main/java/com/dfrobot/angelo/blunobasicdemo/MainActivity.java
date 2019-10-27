@@ -2,7 +2,6 @@ package com.dfrobot.angelo.blunobasicdemo;
 
 import android.os.Bundle;
 import android.content.Intent;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -11,15 +10,13 @@ import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoListener {
+public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoListener, SeekBar.OnSeekBarChangeListener {
 	private Button buttonScan;
 	private Button buttonSerialSend;
-	private EditText serialSendText;
-	private TextView serialReceivedText;
     private SeekBar sliderTop;
     private SeekBar sliderBottom;
     private RemoReceiver remoReceiver;
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -28,16 +25,13 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
 		setContentView(R.layout.activity_main);
         onCreateProcess();														//onCreate Process by BlunoLibrary
 
-        serialReceivedText=(TextView) findViewById(R.id.serialReveicedText);	//initial the EditText of the received data
-        serialSendText=(EditText) findViewById(R.id.serialSendText);			//initial the EditText of the sending data
-
         buttonSerialSend = (Button) findViewById(R.id.buttonSerialSend);		//initial the button for sending the data
         buttonSerialSend.setOnClickListener(new OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				serialSend(getSerialValues());				//send the data to the BLUNO
+				serialSend(getDriveArray(false));				//send the data to the BLUNO
 			}
 		});
         buttonSerialSend.setOnLongClickListener(new View.OnLongClickListener() {
@@ -62,9 +56,17 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
 
         sliderTop = findViewById(R.id.seekBarLeft);
         sliderBottom = findViewById(R.id.seekBarRight);
+        sliderTop.setOnSeekBarChangeListener(this);
+        sliderBottom.setOnSeekBarChangeListener(this);
+        getDriveArray(true);
     }
 
-	private byte[] getSerialValues() {
+    /**
+     * Get the motor drive array for either USB or BLE
+     * @param  updateUI if we should update the UI
+     * @return a bytearray packet that is readable by the Sphero RVR
+     */
+	private byte[] getDriveArray(boolean updateUI) {
 	    int[] left = parseMotor(sliderTop.getProgress());
 	    int leftMode = left[1];
 	    int leftSpeed = left[0];
@@ -72,7 +74,35 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
         int[] right = parseMotor(sliderBottom.getProgress());
         int rightMode = right[1];
         int rightSpeed = right[0];
-        return SpheroMotors.drive(leftMode, leftSpeed, rightMode, rightSpeed);
+        byte[] command = SpheroMotors.drive(leftMode, leftSpeed, rightMode, rightSpeed);
+        if(updateUI){
+            StringBuilder builder = new StringBuilder();
+            builder.append(getReadableDirection(leftMode)).append(",").append(leftSpeed).append("\n");
+            builder.append(getReadableDirection(rightMode)).append(",").append(rightSpeed).append("\n");
+
+            builder.append("[");
+            for (int i = 0; i < command.length; i++) {
+                builder.append(command[i]);
+                if(i+1 < command.length)
+                    builder.append(",");
+            }
+            builder.append("]");
+
+            TextView textView = findViewById(R.id.textViewDebug);
+            textView.setText(builder);
+        }
+        return command;
+    }
+
+    private String getReadableDirection(int mode) {
+	    switch (mode){
+            case 0x01:
+                return ">";
+            case 0x02:
+                return "<";
+            default:
+                return "X";
+        }
     }
 
     private int[] parseMotor(int speed){
@@ -93,6 +123,12 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
 			speed = 0;
             direction = 0x0;
         }
+
+        if(speed > 255 || speed <= 0){
+            speed = 0;
+            direction = 0x0;
+        }
+
         result[0] = speed;
         result[1] = direction;
         return result;
@@ -158,7 +194,6 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
     @Override
     public void onCommand(String command) {
         int[] speed = parseMotor(sliderTop.getProgress());
-        Log.d("TAGAA", command);
         int leftMode = 0x0;
         int rightMode = 0x0;
         int leftSpeed = speed[0];
@@ -187,8 +222,21 @@ public class MainActivity  extends BlunoLibrary implements RemoReceiver.RemoList
 	@Override
 	public void onSerialReceived(String theString) {							//Once connection data received, this function will be called
 		// TODO Auto-generated method stub
-		serialReceivedText.append(theString);							//append the text into the EditText
-		//The Serial data from the BLUNO may be sub-packaged, so using a buffer to hold the String is a good choice.
-		((ScrollView)serialReceivedText.getParent()).fullScroll(View.FOCUS_DOWN);
+
 	}
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        getDriveArray(true);
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+        //unused
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        //unused
+    }
 }
