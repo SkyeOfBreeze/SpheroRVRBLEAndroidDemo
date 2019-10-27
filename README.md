@@ -2,6 +2,8 @@
 
 This sample app shows working code to control the Sphero motors via Bluetooth LE on Android.
 
+This sends data to the BLE serial port `00010002-574f-4f20-5370-6865726f2121`
+
 When the API comes out I may make a more in depth SDK to use instead of this demo, as this only controls the motors without aid from the IMU.
 
 I use this as is for streaming my Robot, but it can be built off of and improved.
